@@ -23,7 +23,7 @@ conda env create --prefix ./env --file environment.yml
 ```
 conda activate <path_to_your_environment>
 ```
-* Launching the Jupyter Notebook App:
+* Launch the Jupyter Notebook App:
 ```
 jupyter notebook
 ```
