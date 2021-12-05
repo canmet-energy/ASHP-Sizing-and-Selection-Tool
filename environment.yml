@@ -1,5 +1,12 @@
-# conda env export > environment.yml  (This coomand will export your active environment to a new file)
-# conda env create --prefix ./env --file environment.yml (This command will set up your conda/python environment 'ASHPtool'; and will download all required packages to your system)
+# The below coomand will export your active environment to a new file
+# conda env export > environment.yml
+
+# The below command will set up your conda/python environment 'ASHPtool'; and will download all required packages to your system)
+# conda env create --prefix ./env --file environment.yml
+
+# The below command will update your conda/python environment 'ASHPtool'
+# conda env update --prefix ./env --file environment.yml  --prune
+
 name: ASHPtool
 channels:
   - jmcmurray
@@ -50,7 +57,6 @@ dependencies:
   - mkl-service=2.4.0=py39h2bbff1b_0
   - mkl_fft=1.3.1=py39h277e83a_0
   - mkl_random=1.2.2=py39hf11a4ad_0
-  - nbclient=0.5.8=pyhd8ed1ab_0
   - nbconvert=6.3.0=py39hcbf5309_0
   - nbformat=5.1.3=pyhd8ed1ab_0
   - nest-asyncio=1.5.1=pyhd8ed1ab_0
