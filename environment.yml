@@ -1,3 +1,6 @@
+# The below command will install all required packages at the same time in your conda/python environment (if you will not be using the command of: conda env create --prefix ./env --file environment.yml)
+# conda install -c conda-forge -c anaconda -c jmcmurray -c menpo notebook requests beautifulsoup4 glob2 os pathlib pandas numpy
+
 # The below coomand will export your active environment to a new file
 # conda env export > environment.yml
 
