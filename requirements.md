@@ -130,17 +130,17 @@ pip install -r requirements.txt
 
 ### Basic Usage
 ```bash
-python src/weather_v4.py
+python src/weather.py
 ```
 
 ### Custom Folders
 ```bash
-python src/weather_v4.py --weather-folder weather --results-folder outputs
+python src/weather.py --weather-folder weather --results-folder outputs
 ```
 
 ### Performance Testing
 ```bash  
-python src/weather_v4.py --benchmark
+python src/weather.py --benchmark
 ```
 
 ---
@@ -150,10 +150,9 @@ python src/weather_v4.py --benchmark
 ```
 project/
 ├── src/
-│   ├── weather_v2.py          # Original implementation
-│   ├── weather_v4.py          # Optimized implementation  
+│   ├── weather.py             # Main implementation  
 │   ├── test_weather_v2.py     # Test single file (v2)
-│   └── test_weather_v4.py     # Test single file (v4)
+│   └── test_weather.py        # Test single file
 ├── data/
 │   └── weather/               # Downloaded weather files (input data)
 │       ├── CAN_AB_*.zip      # Alberta weather stations

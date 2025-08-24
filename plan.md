@@ -56,7 +56,7 @@ if config.daily_condition or config.weekly_condition:
 ## Implementation Steps
 
 ### 1. Analysis Phase
-- Review current CDH_SC3 implementation in weather_v4.py
+- Review current CDH_SC3 implementation in weather.py
 - Identify the apply_conditional_filters function logic for cooling scenarios
 - Understand current temperature binning and data storage mechanisms
 
@@ -171,14 +171,38 @@ def calculate_weekly_rolling_cdd(df: pd.DataFrame) -> pd.DataFrame:
 
 ### 6. Testing & Validation
 
-#### **Excel Reference Validation**
-- **Target**: Row 194 of provided Excel spreadsheet contains reference CDD_week calculation
-- **Test approach**: Process same weather data and compare CDD_week values
-- **Tolerance**: ±0.001 for floating-point differences
-- **Key validation points**:
-  - CDD_Daily calculations for individual days
-  - CDD_week rolling average for days 1-6 (edge cases)
-  - CDD_week rolling average for day 7+ (full 7-day window)
+#### **Mathematical Validation (Excel Reference Not Available)**
+Since the referenced Excel spreadsheet is not available, create independent validation using known test cases:
+
+**Test Case 1: Simple CDD_Daily Validation**
+```python
+# Test known temperature scenarios
+test_temperatures = [
+    (25.0, 5.56),   # 25°C daily avg → CDD = 25.0 - 19.44 = 5.56
+    (19.44, 0.0),   # Exactly at base temp → CDD = 0.0  
+    (15.0, 0.0),    # Below base temp → CDD = 0.0
+    (30.0, 10.56)   # High temp → CDD = 30.0 - 19.44 = 10.56
+]
+```
+
+**Test Case 2: 7-Day Rolling CDD_week Validation**
+```python
+# Create synthetic 14-day temperature sequence
+daily_temps = [20, 22, 24, 26, 28, 25, 23, 21, 19, 25, 27, 29, 24, 22]
+expected_cdd_daily = [0.56, 2.56, 4.56, 6.56, 8.56, 5.56, 3.56, 1.56, 0.0, 5.56, 7.56, 9.56, 4.56, 2.56]
+
+# Expected CDD_week values (validate rolling calculation)
+# Day 1: CDD_week = 0.56/1 = 0.56
+# Day 2: CDD_week = (0.56+2.56)/2 = 1.56  
+# Day 7: CDD_week = (0.56+2.56+4.56+6.56+8.56+5.56+3.56)/7 = 4.46
+# Day 8: CDD_week = (2.56+4.56+6.56+8.56+5.56+3.56+1.56)/7 = 4.56
+```
+
+**Test Case 3: Edge Cases**
+- First 6 days with partial rolling windows
+- Missing temperature data (handle gracefully)
+- Extreme temperatures (very hot/cold days)
+- All temperatures below base (all CDD = 0)
 
 #### **Unit Tests**
 ```python

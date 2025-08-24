@@ -1,0 +1,26 @@
+{
+	"name": "Python Dev Container",
+	"image": "mcr.microsoft.com/devcontainers/python:3.11",
+	"features": {
+		"ghcr.io/devcontainers/features/python:1": {
+			"version": "3.11"
+		},
+		"ghcr.io/devcontainers/features/node:1": {
+			"version": "lts"
+		}
+	},
+		"postCreateCommand": "pip install --upgrade pip && npm install -g @anthropic-ai/claude-code",
+		"customizations": {
+			"vscode": {
+				"settings": {
+					"python.pythonPath": "/usr/local/bin/python"
+				},
+				"extensions": [
+					"ms-python.python",
+					"ms-toolsai.jupyter",
+					"ms-python.black-formatter",
+					"Anthropic.claude-vscode"
+				]
+			}
+		}
+}

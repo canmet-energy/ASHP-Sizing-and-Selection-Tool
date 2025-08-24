@@ -14,7 +14,7 @@ This document contains **critical fixes** that are **MANDATORY** for ensuring id
 ```bash
 # Process identical file with both versions
 python test_weather_v2.py  # Original logic
-python test_weather_v4.py  # Optimized version
+python test_weather.py  # Optimized version
 diff test_v2_output.csv test_v4_output.csv
 # Must return ZERO differences
 ```
@@ -238,7 +238,7 @@ If optimized version produces different results:
 ## Contact and Support
 
 For questions about these fixes:
-- Reference the test files: `test_weather_v2.py` and `test_weather_v4.py`
+- Reference the test files: `test_weather_v2.py` and `test_weather.py`
 - Check the validation outputs: `test_v2_cdh_sc3.csv` vs `test_v4_cdh_sc3.csv`
 - All fixes have been validated to produce identical results
 
