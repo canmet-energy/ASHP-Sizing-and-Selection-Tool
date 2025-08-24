@@ -1,0 +1,367 @@
+# ASHP Sizing and Selection Tool - Git Ignore File
+# =================================================
+# This file specifies which files and directories should be ignored by Git
+# for the Air Source Heat Pump weather data processing tool.
+
+# ==============================================================================
+# PYTHON ENVIRONMENT & DEPENDENCIES
+# ==============================================================================
+
+# Python virtual environments
+.venv/
+venv/
+env/
+ENV/
+.env
+
+# Python bytecode and cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Conda environments
+.conda/
+
+# ==============================================================================
+# WEATHER DATA FILES (LARGE FILES - EXCLUDE FROM VERSION CONTROL)
+# ==============================================================================
+
+# Downloaded weather data files (ZIP format from climate.onebuilding.org)
+# New folder structure separates input data from results
+data/weather/*.zip
+data/weather/
+data/
+
+# Legacy weather data folders (for backward compatibility)
+output/*.zip
+energy_plus_weather/*.zip
+
+# Generated CSV output files from weather processing
+# New results folder structure
+results/*.csv
+results/
+
+# Legacy output CSV files (for backward compatibility)
+output/*.csv  
+energy_plus_weather/*.csv
+
+# Test output files from scenario comparisons
+test_*.csv
+test_v*_*.csv
+test_*_hdh_*.csv
+test_*_cdh_*.csv
+test_heating_*.csv
+test_cooling_*.csv
+test_fixed_*.csv
+
+# Temporary diff files
+*_first_*.csv
+v*_first_*.csv
+
+# ==============================================================================
+# JUPYTER NOTEBOOKS
+# ==============================================================================
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# IPython
+profile_default/
+ipython_config.py
+
+# ==============================================================================
+# DEVELOPMENT TOOLS & IDEs
+# ==============================================================================
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# PyCharm / IntelliJ
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Spyder
+.spyderproject
+.spyproject
+
+# Rope
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# ==============================================================================
+# OPERATING SYSTEM FILES
+# ==============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+
+# macOS Thumbnails
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ==============================================================================
+# LOGS AND TEMPORARY FILES
+# ==============================================================================
+
+# Log files
+*.log
+logs/
+*.out
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Backup files
+*.bak
+*.backup
+*~
+*.swp
+*.swo
+
+# ==============================================================================
+# PROJECT SPECIFIC EXCLUDES
+# ==============================================================================
+
+# Old requirements file (keep in repo for reference but could exclude if needed)
+# requirements_old.md
+
+# Empty files that may be created during testing
+tail
+
+# Performance profiling files
+*.prof
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+
+# ==============================================================================
+# SECURITY & SENSITIVE DATA
+# ==============================================================================
+
+# Environment variables and secrets
+.env.local
+.env.*.local
+secrets.txt
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+
+# Database files (if any)
+*.db
+*.sqlite
+*.sqlite3
+
+# ==============================================================================
+# DOCKER & CONTAINERS
+# ==============================================================================
+
+# Docker files (keep Dockerfile but ignore build artifacts)
+.dockerignore
+docker-compose.override.yml
+
+# ==============================================================================
+# DOCUMENTATION BUILD ARTIFACTS
+# ==============================================================================
+
+# Sphinx documentation build files
+docs/_build/
+doc/_build/
+_build/
+
+# MkDocs
+site/
+
+# ==============================================================================
+# PACKAGE MANAGERS & BUILD TOOLS
+# ==============================================================================
+
+# npm (if Node.js tools are used)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# pipenv
+Pipfile.lock
+
+# poetry
+poetry.lock
+
+# ==============================================================================
+# MISCELLANEOUS
+# ==============================================================================
+
+# Unit test / coverage reports
+.tox/
+.nox/
+.coverage
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff (if using Django)
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff (if using Flask)
+instance/
+.webassets-cache
+
+# Scrapy stuff (if using Scrapy)
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# ==============================================================================
+# KEEP THESE FILES (COMMENTS FOR CLARITY)
+# ==============================================================================
+
+# DO keep these important files:
+# - README.md (project documentation)
+# - requirements.md (project requirements) 
+# - CRITICAL_FIXES.md (important fixes documentation)
+# - IMPLEMENTATION.md (technical implementation guide)
+# - requirements.txt (Python dependencies)
+# - environment.yml (Conda environment)
+# - src/ directory (source code)
+# - resources/*.csv (reference data files - small)
+# - .devcontainer/ (development container configuration)
