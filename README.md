@@ -264,7 +264,7 @@ The CSV outputs work directly with:
 
 ### Canadian Weather Data Sources
 - **Environment and Climate Change Canada**: Official weather data source
-- **CWEC2020**: Canadian Weather for Energy Calculations (2020 format)
+- **CWEC2016**: Canadian Weather for Energy Calculations (2016 format)
 - **EPW Files**: EnergyPlus Weather data format standard
 
 ### HVAC Design Standards
@@ -290,8 +290,5 @@ Found a bug? Have a suggestion? Want to add more scenarios?
 
 ---
 
-## ⚖️ License
-
-This tool is provided for educational and professional use. Weather data is sourced from Environment and Climate Change Canada under their data sharing agreements.
 
 **Remember**: Always validate results with local building codes and engineering judgment. This tool provides data for informed decision-making, but final equipment sizing should be reviewed by a licensed professional engineer.
