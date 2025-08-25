@@ -24,7 +24,7 @@ This document contains mandatory fixes that ensure calculation accuracy. Failure
 
 ### 1. Download Canadian Weather Files
 - Source: http://climate.onebuilding.org/WMO_Region_4_North_and_Central_America/CAN_Canada/
-- Format: ZIP files containing EPW data (CWEC2016.zip)
+- Format: ZIP files containing EPW data (CWEC2020.zip)
 - Method: Async downloads with retry logic
 - Target: ~200+ Canadian weather stations
 

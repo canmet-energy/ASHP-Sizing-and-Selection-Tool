@@ -36,7 +36,7 @@ Download Module   DataFrame   Degree    Binned      Results
 **Purpose**: Async download of Canadian weather files  
 **Parameters**:
 - `save_location`: Directory path (default: 'output')
-- `file_suffix`: File filter (default: 'CWEC2016.zip')  
+- `file_suffix`: File filter (default: 'CWEC2020.zip')  
 - `max_concurrent`: Concurrent limit (default: 10)
 
 **Key Implementation Details**:

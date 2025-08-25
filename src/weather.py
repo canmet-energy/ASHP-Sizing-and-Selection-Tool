@@ -263,7 +263,7 @@ async def download_file_async(session: aiohttp.ClientSession, semaphore: asyncio
         return False
 
 async def download_all_canadian_epw_files(save_location: str = 'energy_plus_weather',
-                                          file_suffix: str = 'CWEC2016.zip',
+                                          file_suffix: str = 'CWEC2020.zip',
                                           max_concurrent: int = 10) -> None:
     """Asynchronously download all Canadian EPW files"""
     logger.info(f"Starting async download to: {save_location}")
@@ -410,7 +410,7 @@ def calculate_mean_temperatures_vectorized(df: pd.DataFrame) -> pd.DataFrame:
         end_idx = min(i + 24, len(df))
         if end_idx > i:
             daily_mean = df['temp_air'].iloc[i:end_idx].mean()
-            df['daily_mean_temp_c'].iloc[i:end_idx] = daily_mean
+            df.iloc[i:end_idx, df.columns.get_loc('daily_mean_temp_c')] = daily_mean
     
     # Weekly mean calculation - match v2 exactly  
     # Process in 168-hour blocks: 0-167, 168-335, 336-503, etc.
@@ -418,7 +418,7 @@ def calculate_mean_temperatures_vectorized(df: pd.DataFrame) -> pd.DataFrame:
         end_idx = min(i + 168, len(df))
         if end_idx > i:
             weekly_mean = df['temp_air'].iloc[i:end_idx].mean()
-            df['weekly_mean_temp_c'].iloc[i:end_idx] = weekly_mean
+            df.iloc[i:end_idx, df.columns.get_loc('weekly_mean_temp_c')] = weekly_mean
     
     return df
 
@@ -586,7 +586,7 @@ def aggregate_results_optimized(df: pd.DataFrame) -> pd.DataFrame:
     exactly matching results with weather_v2.py
     """
     # Use exact same aggregation as weather_v2.py with lambda functions
-    df_dh = df.groupby(['hour', 'bin']).agg({
+    df_dh = df.groupby(['hour', 'bin'], observed=False).agg({
         'degree_hour': 'sum', 
         'temp_air': 'mean', 
         'count_hours_in_bin': lambda g: df['degree_hour'].loc[g.index][(df['degree_hour'] > 0.0)].count(),
@@ -600,12 +600,14 @@ def aggregate_results_optimized(df: pd.DataFrame) -> pd.DataFrame:
     df_dh.rename(columns={"temp_air": "temp_mean"}, inplace=True)
     
     # Fill NaN values with 0.0 (match weather_v2.py exactly)
-    df_dh['temp_mean'].fillna(0.0, inplace=True)
-    df_dh['count_hours_in_bin'].fillna(0.0, inplace=True)
-    df_dh['count_hour_spring'].fillna(0.0, inplace=True)
-    df_dh['count_hour_summer'].fillna(0.0, inplace=True)
-    df_dh['count_hour_fall'].fillna(0.0, inplace=True)
-    df_dh['count_hour_winter'].fillna(0.0, inplace=True)
+    df_dh = df_dh.fillna({
+        'temp_mean': 0.0,
+        'count_hours_in_bin': 0.0,
+        'count_hour_spring': 0.0,
+        'count_hour_summer': 0.0,
+        'count_hour_fall': 0.0,
+        'count_hour_winter': 0.0
+    })
     
     return df_dh
 
@@ -627,7 +629,7 @@ def process_single_file(args: Tuple[str, ScenarioConfig]) -> Optional[Processing
     7. Aggregate results: Create final summary tables for HVAC sizing
     
     INPUTS:
-    - file_path: Path to the weather file (e.g., "Toronto_CWEC2016.zip")
+    - file_path: Path to the weather file (e.g., "Toronto_CWEC2020.zip")
     - config: Scenario settings (heating vs cooling, thresholds, bin sizes)
     
     OUTPUTS:
@@ -798,7 +800,7 @@ def save_results(df: pd.DataFrame, folder_location: str, filename: str) -> None:
         logger.error(f"Failed to save results: {e}")
 
 def run_scenario(scenario_name: str, folder_location: str = 'energy_plus_weather', 
-                num_processes: Optional[int] = None) -> None:
+                results_folder: str = 'results', num_processes: Optional[int] = None) -> None:
     """
     Run a single scenario with performance monitoring - process one analysis type
     
@@ -836,7 +838,7 @@ def run_scenario(scenario_name: str, folder_location: str = 'energy_plus_weather
     
     # Save results and report performance
     if not results_df.empty:
-        save_results(results_df, folder_location, config.name)
+        save_results(results_df, results_folder, config.name)
         elapsed = time.time() - start_time
         logger.info(f"Scenario {scenario_name} completed in {elapsed:.2f}s")
     else:
@@ -890,7 +892,7 @@ def run_all_scenarios(weather_folder: str = 'data/weather',
     total_start = time.time()
     # Run each of the 6 predefined scenarios
     for scenario_name in PREDEFINED_SCENARIOS.keys():
-        run_scenario(scenario_name, weather_folder, results_folder, num_processes)
+        run_scenario(scenario_name, folder_location=weather_folder, results_folder=results_folder, num_processes=num_processes)
     
     # Report total completion time
     total_elapsed = time.time() - total_start

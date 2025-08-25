@@ -264,7 +264,7 @@ The CSV outputs work directly with:
 
 ### Canadian Weather Data Sources
 - **Environment and Climate Change Canada**: Official weather data source
-- **CWEC2016**: Canadian Weather for Energy Calculations (2016 format)
+- **CWEC2020**: Canadian Weather for Energy Calculations (2020 format)
 - **EPW Files**: EnergyPlus Weather data format standard
 
 ### HVAC Design Standards
