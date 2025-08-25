@@ -31,6 +31,25 @@ CDD_week = (Σ(i=0 to 6) CDD_Daily[current_day - i]) / 7
 ## Current vs. New Logic Comparison
 
 ### **Before (Current CDH_SC3)**
+**Cooling season workflow (Scenario 3):**
+```
+If (daily_mean_temperature > 22.8°C OR weekly_mean_temperature > 19.5°C) then
+    Store hour in total cooling hours in corresponding temperature bin
+    If (date is within range of 21 September – 20 December) then
+        Store hour in fall in corresponding temperature bin
+    Else
+        If (date is within 21 March – 20 June) then
+            Store hour in spring in corresponding temperature bin
+        Else
+            Store hour in summer in corresponding temperature bin
+        Endif
+    Endif
+Else
+    Thank u, next (skip hour - set degree_hour = 0)
+Endif
+```
+
+**Implementation:**
 ```python
 # Current implementation in apply_conditional_filters()
 if config.daily_condition or config.weekly_condition:
@@ -39,7 +58,30 @@ if config.daily_condition or config.weekly_condition:
     mask = (daily_mask | weekly_mask) == False
 ```
 
-### **After (New CDH_SC3)**
+### **After (New CDH_SC3)**  
+**Cooling season workflow (Scenario 3 – Pull ALL hours from days when the daily average temperature > 23.9°C or CDD_week > 2.0):**
+```
+# First calculate CDD values
+CDD_Daily = MAX((daily_mean_temperature - 19.44°C), 0)
+CDD_week = 7-day rolling average of CDD_Daily
+
+If (daily_mean_temperature > 23.9°C OR CDD_week > 2.0) then
+    Store ALL 24 hours from that day as cooling hours in corresponding temperature bin
+    If (date is within range of 21 September – 20 December) then
+        Store hours in fall in corresponding temperature bin
+    Else
+        If (date is within 21 March – 20 June) then
+            Store hours in spring in corresponding temperature bin
+        Else
+            Store hours in summer in corresponding temperature bin
+        Endif
+    Endif
+Else
+    Thank u, next (skip all hours from that day - set degree_hour = 0)
+Endif
+```
+
+**Implementation:**
 ```python
 # New implementation with CDD logic
 if config.daily_condition or config.weekly_condition:
