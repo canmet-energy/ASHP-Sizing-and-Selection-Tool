@@ -42,61 +42,37 @@ Weather data is organized into **2.8°C temperature bins** (e.g., -23.6°C to -2
 
 ## 💻 Getting Started (Step-by-Step)
 
-### Step 1: Get the Code from GitHub
+### Step 1: Install dependancies
 
-1. **Install Git** (if not already installed):
+**Install Git** (if not already installed):
    - Windows: Download from [git-scm.com](https://git-scm.com/download/win)
-   - Mac: Install Xcode Command Line Tools: `xcode-select --install`
-   - Linux: `sudo apt install git` (Ubuntu) or `sudo yum install git` (CentOS)
-
-2. **Clone the repository**:
+     
+**Install Python 3.10** (if not already installed) using Powershell:
    ```bash
-   git clone https://github.com/your-username/ASHP-Sizing-and-Selection-Tool-1.git
-   cd ASHP-Sizing-and-Selection-Tool-1
+   powershell -c "irm https://astral.sh/uv/install.ps1 | iex; uv --native-tls python install 3.10" 
    ```
 
-### Step 2: Set Up Python Environment
-
-1. **Check Python version** (need Python 3.8 or higher):
+### Step 2: Clone the workspace to a folder on your computer, and change directory into that folder.  
    ```bash
-   python --version
-   # or
-   python3 --version
+   git clone https://github.com/canmet-energy/ASHP-Sizing-and-Selection-Tool.git;cd ASHP-Sizing-and-Selection-Tool
    ```
 
-2. **Create a virtual environment** (keeps this project's packages separate):
+### Step 3: Set Up Python Environment
    ```bash
-   # On Windows:
-   python -m venv .venv
-   .venv\Scripts\activate
-
-   # On Mac/Linux:
-   python3 -m venv .venv
-   source .venv/bin/activate
+    uv venv .venv; uv pip install -r requirements.txt
    ```
-   
-   💡 **You'll see (.venv) at the start of your command prompt when activated**
-
-3. **Install required packages**:
+### Step 4: Run the weather.py file. 
    ```bash
-   pip install -r requirements.txt
+   uv run src/weather.py
    ```
 
-### Step 3: Run the Weather Analysis
 
-**Basic usage** (downloads weather data for all Canadian locations):
-```bash
-python src/weather.py
-```
+
+## Tips
 
 **Custom folders** (if you want to organize files differently):
 ```bash
 python src/weather.py --weather-folder weather --results-folder outputs
-```
-
-**Performance testing** (see how fast it runs):
-```bash
-python src/weather.py --benchmark
 ```
 
 ---
@@ -289,6 +265,7 @@ Found a bug? Have a suggestion? Want to add more scenarios?
 4. Submit a pull request
 
 ---
+
 
 
 **Remember**: Always validate results with local building codes and engineering judgment. This tool provides data for informed decision-making, but final equipment sizing should be reviewed by a licensed professional engineer.

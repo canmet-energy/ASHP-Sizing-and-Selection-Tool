@@ -105,11 +105,13 @@ class ScenarioConfig:
     name: str                    # Name of the scenario (like "hdh_sc1")
     degree_type: DegreeHourType  # Heating or cooling calculation
     daily_threshold: float       # Temperature threshold for daily averages (°C)
-    weekly_threshold: float      # Temperature threshold for weekly averages (°C)
+    weekly_threshold: float      # Temperature threshold for weekly averages (°C) or CDD_week for CDH_SC3
     temp_range: Tuple[float, float]  # Min and max temperatures for bins (°C)
     bin_size: float             # Size of each temperature bin (°C) - like 2.8°C intervals
     daily_condition: bool       # Should we check daily average temperature?
     weekly_condition: bool      # Should we check weekly average temperature?
+    cdd_base_temp: Optional[float] = None  # Base temperature for CDD calculations (°C) - only for CDH_SC3
+    cdd_daily_threshold: Optional[float] = None  # Daily CDD threshold for CDH_SC3
     
     def __post_init__(self):
         """Check that the settings make sense (like quality control)"""
@@ -229,12 +231,14 @@ PREDEFINED_SCENARIOS = {
     'cdh_sc3': ScenarioConfig(
         name='cdh_sc3', 
         degree_type=DegreeHourType.COOLING,
-        daily_threshold=22.8,        # Cool if daily avg > 22.8°C
-        weekly_threshold=19.5,       # OR if weekly avg > 19.5°C
+        daily_threshold=23.9,        # Updated: Cool if daily avg > 23.9°C
+        weekly_threshold=2.0,        # Updated: OR if CDD_week > 2.0 
         temp_range=(23.6, 43.2),    # Different temp range for hot weather analysis
         bin_size=2.8,
         daily_condition=True, 
-        weekly_condition=True       # Check BOTH daily AND weekly conditions
+        weekly_condition=True,      # Check BOTH daily AND CDD_week conditions
+        cdd_base_temp=19.4,         # Base temperature for CDD calculations (matches Excel)
+        cdd_daily_threshold=4.44    # Daily CDD threshold (matches Excel)
     )
 }
 
@@ -390,6 +394,66 @@ def calculate_degree_hours(df: pd.DataFrame, config: ScenarioConfig) -> pd.DataF
         df['degree_hour'] = np.maximum((df['temp_air'] - config.daily_threshold) / Constants.HOURS_PER_DAY, 0.0).astype(float)
     return df
 
+def calculate_daily_cdd(df: pd.DataFrame, base_temp: float) -> pd.DataFrame:
+    """
+    Calculate daily cooling degree days using base temperature
+    
+    WHAT THIS DOES (for Mechanical Engineers):
+    This calculates cooling degree days (CDD) for each day, which represents
+    the cooling demand based on how much the daily average temperature exceeds
+    a base temperature.
+    
+    FORMULA: CDD_Daily = MAX((daily_mean_temp - base_temp), 0)
+    
+    EXAMPLE:
+    - Daily average: 25°C, Base: 19.44°C → CDD = 25 - 19.44 = 5.56
+    - Daily average: 15°C, Base: 19.44°C → CDD = 0 (can't be negative)
+    """
+    df['CDD_Daily'] = np.maximum(df['daily_mean_temp_c'] - base_temp, 0.0).astype(float)
+    return df
+
+def calculate_weekly_rolling_cdd(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculate 7-day rolling average of daily cooling degree days
+    
+    WHAT THIS DOES (for Mechanical Engineers):
+    This creates a smooth indicator of sustained cooling demand over the past week.
+    It prevents cooling systems from cycling on/off due to single hot days.
+    
+    CALCULATION:
+    CDD_week = (sum of last 7 days of CDD_Daily) / 7
+    
+    EDGE CASE HANDLING:
+    - Days 1-6: Use available data and adjust denominator
+    - Example: Day 3 uses average of days 1-3, not days -4 to 3
+    """
+    # First, create a daily summary with unique CDD values per day
+    # This is needed because each day has 24 identical CDD_Daily values
+    daily_cdd = []
+    for i in range(0, len(df), 24):
+        if i < len(df):
+            # Get the CDD_Daily value for this day (all 24 hours have the same value)
+            daily_cdd.append(df.iloc[i]['CDD_Daily'])
+    
+    # Calculate 7-day rolling average on the daily values
+    cdd_week_daily = []
+    for i in range(len(daily_cdd)):
+        # Determine the window (max 7 days, less for early days)
+        start_idx = max(0, i - 6)
+        window = daily_cdd[start_idx:i + 1]
+        # Calculate average
+        avg = sum(window) / len(window)
+        cdd_week_daily.append(avg)
+    
+    # Now assign the rolling average to all 24 hours of each day
+    df['CDD_week'] = 0.0
+    for day_idx, cdd_week_value in enumerate(cdd_week_daily):
+        start_hour = day_idx * 24
+        end_hour = min(start_hour + 24, len(df))
+        df.iloc[start_hour:end_hour, df.columns.get_loc('CDD_week')] = cdd_week_value
+    
+    return df
+
 def calculate_mean_temperatures_vectorized(df: pd.DataFrame) -> pd.DataFrame:
     """
     Calculate mean temperatures to match weather_v2.py exactly
@@ -440,6 +504,10 @@ def apply_conditional_filters(df: pd.DataFrame, config: ScenarioConfig) -> pd.Da
     - If the weekly average is cool enough, don't cool that week
     - Example: Even if it's hot right now, if the daily average is 15°C, don't count cooling hours
     
+    CDH_SC3 SPECIAL LOGIC:
+    - Uses CDD_week instead of simple weekly temperature average
+    - Dual-gate system: (daily > 23.9°C) OR (CDD_week > 2.0)
+    
     This prevents oversizing equipment by ignoring brief temperature spikes.
     """
     if config.degree_type == DegreeHourType.HEATING:
@@ -463,8 +531,18 @@ def apply_conditional_filters(df: pd.DataFrame, config: ScenarioConfig) -> pd.Da
             mask = (df['daily_mean_temp_c'] > config.daily_threshold) == False
         elif config.daily_condition or config.weekly_condition:
             # Check both daily AND weekly averages - turn off cooling when NEITHER condition is met
-            daily_mask = df['daily_mean_temp_c'] > config.daily_threshold
-            weekly_mask = df['weekly_mean_temp_c'] > config.weekly_threshold
+            # SPECIAL HANDLING FOR CDH_SC3: Use CDD for both daily and weekly conditions
+            if config.name == 'cdh_sc3' and 'CDD_Daily' in df.columns and 'CDD_week' in df.columns:
+                # CDH_SC3: Use CDD for both conditions (matches Excel formula)
+                daily_mask = df['CDD_Daily'] > config.cdd_daily_threshold  # CDD_daily > 4.44
+                weekly_mask = df['CDD_week'] > config.weekly_threshold     # CDD_week > 2.0
+                # For CDH_SC3, mark hours that meet the condition for special handling
+                df['cdh_sc3_condition_met'] = daily_mask | weekly_mask
+            else:
+                # All other scenarios: Use standard temperature thresholds
+                daily_mask = df['daily_mean_temp_c'] > config.daily_threshold
+                weekly_mask = df['weekly_mean_temp_c'] > config.weekly_threshold
+            
             # Turn off cooling if NEITHER daily NOR weekly average is above threshold
             mask = (daily_mask | weekly_mask) == False
         else:
@@ -563,10 +641,19 @@ def create_seasonal_masks(df: pd.DataFrame) -> Dict[str, pd.Series]:
     - Prevents double-counting hours in different seasons
     
     The base_mask filters out hours where degree_hour = 0 (no heating/cooling needed).
+    
+    SPECIAL HANDLING FOR CDH_SC3:
+    For CDH_SC3, we use the cdh_sc3_condition_met flag instead of degree_hour > 0
+    to count ALL hours when CDD conditions are met.
     """
-    # Base mask: only include hours where heating/cooling is actually needed
-    # This excludes hours where conditions weren't met (set to 0 by apply_conditional_filters)
-    base_mask = df['degree_hour'] > 0.0
+    # Check if this is CDH_SC3 with special condition flag
+    if 'cdh_sc3_condition_met' in df.columns:
+        # CDH_SC3: Use CDD condition flag
+        base_mask = df['cdh_sc3_condition_met']
+    else:
+        # Standard: only include hours where heating/cooling is actually needed
+        # This excludes hours where conditions weren't met (set to 0 by apply_conditional_filters)
+        base_mask = df['degree_hour'] > 0.0
     
     # Create individual season masks by combining season check with base mask
     # The & operator means "AND" - must be both the right season AND need heating/cooling
@@ -584,17 +671,36 @@ def aggregate_results_optimized(df: pd.DataFrame) -> pd.DataFrame:
     
     This uses the identical groupby aggregation with lambda functions to ensure
     exactly matching results with weather_v2.py
+    
+    SPECIAL HANDLING FOR CDH_SC3:
+    For CDH_SC3, we count ALL hours when CDD conditions are met, not just hours with degree_hour > 0.
+    This matches the Excel formula: IF(OR(CDD_daily > 4.44, CDD_7day > 2), 1, 0)
     """
-    # Use exact same aggregation as weather_v2.py with lambda functions
-    df_dh = df.groupby(['hour', 'bin'], observed=False).agg({
-        'degree_hour': 'sum', 
-        'temp_air': 'mean', 
-        'count_hours_in_bin': lambda g: df['degree_hour'].loc[g.index][(df['degree_hour'] > 0.0)].count(),
-        'count_hour_spring': lambda g: df['degree_hour'].loc[g.index][(df['season'] == 'spring') & (df['degree_hour'] > 0.0)].count(),
-        'count_hour_summer': lambda g: df['degree_hour'].loc[g.index][(df['season'] == 'summer') & (df['degree_hour'] > 0.0)].count(),
-        'count_hour_fall': lambda g: df['degree_hour'].loc[g.index][(df['season'] == 'fall') & (df['degree_hour'] > 0.0)].count(),
-        'count_hour_winter': lambda g: df['degree_hour'].loc[g.index][(df['season'] == 'winter') & (df['degree_hour'] > 0.0)].count()
-    }).reset_index()
+    # Check if this is CDH_SC3 with special condition flag
+    use_cdh_sc3_logic = 'cdh_sc3_condition_met' in df.columns
+    
+    if use_cdh_sc3_logic:
+        # CDH_SC3: Count ALL hours when CDD conditions are met
+        df_dh = df.groupby(['hour', 'bin'], observed=False).agg({
+            'degree_hour': 'sum', 
+            'temp_air': 'mean', 
+            'count_hours_in_bin': lambda g: df['cdh_sc3_condition_met'].loc[g.index].sum(),
+            'count_hour_spring': lambda g: df.loc[g.index][(df['season'] == 'spring') & df['cdh_sc3_condition_met']].shape[0],
+            'count_hour_summer': lambda g: df.loc[g.index][(df['season'] == 'summer') & df['cdh_sc3_condition_met']].shape[0],
+            'count_hour_fall': lambda g: df.loc[g.index][(df['season'] == 'fall') & df['cdh_sc3_condition_met']].shape[0],
+            'count_hour_winter': lambda g: df.loc[g.index][(df['season'] == 'winter') & df['cdh_sc3_condition_met']].shape[0]
+        }).reset_index()
+    else:
+        # Standard logic: Count only hours with degree_hour > 0
+        df_dh = df.groupby(['hour', 'bin'], observed=False).agg({
+            'degree_hour': 'sum', 
+            'temp_air': 'mean', 
+            'count_hours_in_bin': lambda g: df['degree_hour'].loc[g.index][(df['degree_hour'] > 0.0)].count(),
+            'count_hour_spring': lambda g: df['degree_hour'].loc[g.index][(df['season'] == 'spring') & (df['degree_hour'] > 0.0)].count(),
+            'count_hour_summer': lambda g: df['degree_hour'].loc[g.index][(df['season'] == 'summer') & (df['degree_hour'] > 0.0)].count(),
+            'count_hour_fall': lambda g: df['degree_hour'].loc[g.index][(df['season'] == 'fall') & (df['degree_hour'] > 0.0)].count(),
+            'count_hour_winter': lambda g: df['degree_hour'].loc[g.index][(df['season'] == 'winter') & (df['degree_hour'] > 0.0)].count()
+        }).reset_index()
     
     # Rename column from temp_air to temp_mean (match weather_v2.py)
     df_dh.rename(columns={"temp_air": "temp_mean"}, inplace=True)
@@ -653,7 +759,14 @@ def process_single_file(args: Tuple[str, ScenarioConfig]) -> Optional[Processing
         # Order matters - each step builds on the previous one
         df = calculate_degree_hours(df, config)           # Calculate heating/cooling loads
         df = calculate_mean_temperatures_vectorized(df)   # Daily/weekly temperature averages
-        df = apply_conditional_filters(df, config)        # Apply start/stop logic
+        
+        # STEP 2.5: CALCULATE CDD FOR CDH_SC3 SCENARIO
+        # Add CDD calculations for CDH_SC3 before filtering
+        if config.name == 'cdh_sc3' and config.cdd_base_temp is not None:
+            df = calculate_daily_cdd(df, config.cdd_base_temp)    # Calculate daily CDD values
+            df = calculate_weekly_rolling_cdd(df)                 # Calculate 7-day rolling average
+        
+        df = apply_conditional_filters(df, config)        # Apply start/stop logic (now uses CDD for CDH_SC3)
         df = classify_seasons(df)                         # Assign seasons to each hour
         df = create_temperature_bins(df, config)          # Group temperatures into bins
         
@@ -677,7 +790,15 @@ def process_single_file(args: Tuple[str, ScenarioConfig]) -> Optional[Processing
         result_df['city'] = meta['city']
         result_df['state-prov'] = meta['state-prov']
         
-        # STEP 10: PERFORMANCE MONITORING
+        # STEP 10: CLEANUP TEMPORARY CDD COLUMNS
+        # Remove temporary CDD columns from final results (only keep in main DataFrame during processing)
+        # These columns are not part of the standard output format
+        if 'CDD_Daily' in result_df.columns:
+            result_df = result_df.drop(columns=['CDD_Daily'])
+        if 'CDD_week' in result_df.columns:
+            result_df = result_df.drop(columns=['CDD_week'])
+        
+        # STEP 11: PERFORMANCE MONITORING
         processing_time = time.time() - start_time
         logger.info(f"Processed {os.path.basename(file_path)} in {processing_time:.2f}s")
         
